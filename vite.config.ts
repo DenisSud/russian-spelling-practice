@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-    base: "/russian-stress-practice/", // Remove the trailing dash
+    base: "/russian-spelling-practice/", // Updated for spelling practice app
     build: {
         outDir: "dist",
         emptyOutDir: true,

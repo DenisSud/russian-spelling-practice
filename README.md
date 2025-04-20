@@ -1,13 +1,10 @@
-{{REWRITTEN_CODE}}
-# Russian Stress Practice
+# Russian Spelling Practice
 
-A web application to help learners practice Russian word stress. Correctly placing stress in Russian words is crucial for proper pronunciation and understanding.
-
-![Russian Stress Practice](https://github.com/DenisSud/russian-stress-practice-/assets/YOUR_ASSET_ID/screenshot.png)
+A web application to help learners practice Russian word spelling. Correctly spelling Russian words is crucial for proper writing and communication.
 
 ## Live Demo
 
-Visit the application at: [https://denissud.github.io/russian-stress-practice/](https://denissud.github.io/russian-stress-practice/)
+Visit the application at: [https://denissud.github.io/russian-spelling-practice/](https://denissud.github.io/russian-spelling-practice/)
 
 ## Features
 

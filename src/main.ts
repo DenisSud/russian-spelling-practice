@@ -9,8 +9,9 @@ declare global {
 
 interface WordData {
     word: string;
-    stressedIndex: number;
-    stressedWord: string;
+    missingVowelIndex: number;
+    correctWord: string;
+    displayWord: string;
 }
 
 // Set flag to indicate the script has successfully loaded
@@ -28,6 +29,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const attemptsDisplay = document.getElementById(
         "attempts",
     ) as HTMLSpanElement;
+    const answerInput = document.getElementById(
+        "answer-input",
+    ) as HTMLInputElement;
+    const submitButton = document.getElementById(
+        "submit-button",
+    ) as HTMLButtonElement;
 
     const VOWELS: string = "аеёиоуыэюя";
     let wordsData: WordData[] = [];
@@ -40,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             // Use the base URL from Vite environment
             const basePath = (import.meta as any).env.BASE_URL || '/';
-            const response: Response = await fetch(`${basePath}phonetics.txt`);
+            const response: Response = await fetch(`${basePath}spelling.txt`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -52,14 +59,16 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 wordDisplay.textContent = "No words found in file.";
                 nextButton.disabled = true;
+                submitButton.disabled = true;
             }
         } catch (error) {
             console.error("Error loading or parsing words file:", error);
             wordDisplay.textContent = "Error loading words.";
             feedback.textContent =
-                "Could not load phonetics.txt. Please check the file and console.";
+                "Could not load spelling.txt. Please check the file and console.";
             feedback.className = "feedback incorrect";
             nextButton.disabled = true;
+            submitButton.disabled = true;
         }
     }
 
@@ -71,51 +80,45 @@ document.addEventListener("DOMContentLoaded", () => {
             .map((line) => line.trim())
             .filter((line) => line.length > 0);
 
-        // Process each line, handling semicolon-separated forms
+        // Process each line, handling comma-separated forms
         const processedWords: WordData[] = [];
 
         for (const line of lines) {
-            // Split by semicolon to handle multiple forms
-            const wordForms = line.split(";").map((form) => form.trim());
+            // Split by comma to handle multiple forms
+            const wordForms = line.split(",").map((form) => form.trim());
 
-            for (const stressedWord of wordForms) {
+            for (const word of wordForms) {
                 // Skip empty forms
-                if (stressedWord.length === 0) continue;
+                if (word.length === 0) continue;
 
-                // Process comma-separated forms (like "прИбыл, прибылА, прИбыли")
-                const commaSeparatedForms = stressedWord
-                    .split(",")
-                    .map((form) => form.trim());
+                const wordLower: string = word.toLowerCase();
 
-                for (const form of commaSeparatedForms) {
-                    if (form.length === 0) continue;
-
-                    const wordLower: string = form.toLowerCase();
-                    let stressedIndex: number = -1;
-
-                    for (let i: number = 0; i < form.length; i++) {
-                        if (
-                            form[i] !== wordLower[i] &&
-                            VOWELS.includes(wordLower[i])
-                        ) {
-                            stressedIndex = i;
-                            break;
-                        }
+                // Find vowels in the word
+                const vowelIndices: number[] = [];
+                for (let i = 0; i < wordLower.length; i++) {
+                    if (VOWELS.includes(wordLower[i])) {
+                        vowelIndices.push(i);
                     }
-
-                    if (stressedIndex === -1) {
-                        console.warn(
-                            `Could not find stressed vowel in: "${form}"`,
-                        );
-                        continue;
-                    }
-
-                    processedWords.push({
-                        word: wordLower,
-                        stressedIndex: stressedIndex,
-                        stressedWord: form,
-                    });
                 }
+
+                // Skip words with no vowels
+                if (vowelIndices.length === 0) continue;
+
+                // Randomly select a vowel to remove
+                const randomVowelIndex = Math.floor(Math.random() * vowelIndices.length);
+                const missingVowelIndex = vowelIndices[randomVowelIndex];
+
+                // Create a display word with the missing vowel
+                const displayWordChars = wordLower.split('');
+                displayWordChars[missingVowelIndex] = '_';
+                const displayWord = displayWordChars.join('');
+
+                processedWords.push({
+                    word: wordLower,
+                    missingVowelIndex: missingVowelIndex,
+                    correctWord: wordLower,
+                    displayWord: displayWord
+                });
             }
         }
 
@@ -135,74 +138,65 @@ document.addEventListener("DOMContentLoaded", () => {
         feedback.className = "feedback";
         nextButton.disabled = true;
 
-        currentWord.word.split("").forEach((char: string, index: number) => {
+        // Enable the input and submit button
+        answerInput.value = "";
+        answerInput.disabled = false;
+        submitButton.disabled = false;
+        answerInput.focus();
+
+        // Display the word with the missing vowel
+        currentWord.displayWord.split("").forEach((char: string) => {
             const span: HTMLSpanElement = document.createElement("span");
             span.textContent = char;
-            if (VOWELS.includes(char.toLowerCase())) {
-                span.classList.add("vowel");
-                span.dataset.index = index.toString(); // Store as string
-                span.addEventListener("click", handleVowelClick);
+            if (char === '_') {
+                span.classList.add("missing-vowel");
             }
             wordDisplay.appendChild(span);
         });
     }
 
-    function handleVowelClick(event: Event): void {
+    function handleAnswer(): void {
         if (isAnswered) return;
 
         isAnswered = true;
         wordDisplay.classList.add("answered");
-        const target = event.target as HTMLSpanElement; // Type assertion
-        const clickedIndex: number = parseInt(target.dataset.index || "", 10); // Handle potential null
-        const correctIndex: number = wordsData[currentWordIndex].stressedIndex;
-        const correctWord: string = wordsData[currentWordIndex].stressedWord;
+
+        const userAnswer: string = answerInput.value.toLowerCase();
+        const currentWord: WordData = wordsData[currentWordIndex];
+        const correctVowel: string = currentWord.word[currentWord.missingVowelIndex];
+
+        // Disable input after answering
+        answerInput.disabled = true;
+        submitButton.disabled = true;
 
         attempts++;
         attemptsDisplay.textContent = attempts.toString();
 
-        // Remove click listeners from all vowels after answering
-        wordDisplay.querySelectorAll("span.vowel").forEach((vowelSpan) => {
-            // Clone and replace to remove listeners cleanly
-            const newSpan = vowelSpan.cloneNode(true) as HTMLSpanElement;
-            vowelSpan.parentNode?.replaceChild(newSpan, vowelSpan);
-        });
+        // Find the missing vowel span
+        const missingVowelSpan = wordDisplay.querySelector(".missing-vowel") as HTMLSpanElement;
 
-        // Find the span elements again after replacement
-        const vowelSpans = Array.from(
-            wordDisplay.querySelectorAll("span"),
-        ) as HTMLSpanElement[];
-
-        if (clickedIndex === correctIndex) {
+        if (userAnswer === correctVowel) {
             score++;
             scoreDisplay.textContent = score.toString();
             feedback.textContent = "Correct!";
             feedback.className = "feedback correct";
 
-            const correctSpan = vowelSpans.find(
-                (span) =>
-                    parseInt(span.dataset.index || "", 10) === correctIndex,
-            );
-            if (correctSpan) {
-                correctSpan.classList.add("correct-stress");
+            if (missingVowelSpan) {
+                missingVowelSpan.textContent = correctVowel;
+                missingVowelSpan.classList.add("correct-answer");
             }
         } else {
-            feedback.textContent = `Incorrect. Correct: ${correctWord}`;
+            feedback.textContent = `Incorrect. The correct word is: ${currentWord.word}`;
             feedback.className = "feedback incorrect";
 
-            const correctSpan = vowelSpans.find(
-                (span) =>
-                    parseInt(span.dataset.index || "", 10) === correctIndex,
-            );
-            const incorrectSpan = vowelSpans.find(
-                (span) =>
-                    parseInt(span.dataset.index || "", 10) === clickedIndex,
-            );
+            if (missingVowelSpan) {
+                missingVowelSpan.textContent = correctVowel;
+                missingVowelSpan.classList.add("correct-answer");
 
-            if (correctSpan) {
-                correctSpan.classList.add("correct-stress");
-            }
-            if (incorrectSpan) {
-                incorrectSpan.classList.add("incorrect-guess");
+                // Show what the user guessed
+                if (userAnswer.length > 0) {
+                    feedback.textContent += ` (you entered: ${userAnswer})`;
+                }
             }
         }
 
@@ -217,6 +211,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     nextButton.addEventListener("click", displayNextWord);
+    submitButton.addEventListener("click", handleAnswer);
+
+    // We'll use a flag to prevent immediate next word after answering
+    let justAnswered = false;
+
+    // Handle Enter key in the input field
+    answerInput.addEventListener("keypress", (event) => {
+        if (event.key === "Enter" && !isAnswered) {
+            // If not answered yet, submit the answer
+            handleAnswer();
+            // Set flag to prevent immediate next word
+            justAnswered = true;
+            // Reset the flag after a short delay
+            setTimeout(() => {
+                justAnswered = false;
+            }, 300);
+        }
+    });
+
+    // Add a document-wide event listener for Enter key to handle next word
+    document.addEventListener("keypress", (event) => {
+        if (event.key === "Enter" && isAnswered && !justAnswered) {
+            // If already answered and not immediately after answering, go to next word
+            displayNextWord();
+        }
+    });
+
     nextButton.disabled = true;
+    submitButton.disabled = true;
     loadWords();
 });

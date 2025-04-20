@@ -34,21 +34,24 @@ h1 {
     user-select: none; /* Prevent text selection interfering */
 }
 
-.word-display span.vowel {
-    cursor: pointer;
-    padding: 0 2px; /* Add slight padding for easier clicking */
-    border-radius: 3px;
-    transition: background-color 0.2s ease;
+.word-display span.missing-vowel {
+    color: #dc3545;
+    /* Red */
+    font-weight: bold;
+    padding: 0 2px;
+    border-bottom: 2px solid #dc3545;
 }
 
-.word-display span.vowel:hover {
-    background-color: #e0e0e0;
+.word-display span.correct-answer {
+    color: #28a745;
+    /* Green */
+    font-weight: bold;
+    border-bottom: 2px solid #28a745;
 }
 
 /* Class added after an answer is given */
-.word-display.answered span.vowel:hover {
-    background-color: transparent; /* Disable hover effect after answer */
-    cursor: default;
+.word-display.answered {
+    color: #333;
 }
 
 .feedback {
@@ -66,21 +69,34 @@ h1 {
     color: #dc3545; /* Red */
 }
 
-/* Style for highlighting the correct stress after feedback */
-.word-display span.correct-stress {
-    color: #28a745; /* Green */
-    font-weight: bold;
-    /* Optional: Add subtle background or underline */
-    /* background-color: #d4edda; */
+.answer-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    gap: 10px;
 }
 
-/* Style for highlighting the incorrect guess (optional) */
-.word-display span.incorrect-guess {
-    text-decoration: line-through;
-    color: #dc3545; /* Red */
+#answer-input {
+    padding: 10px;
+    font-size: 1.2em;
+    width: 60px;
+    text-align: center;
+    border: 2px solid #ddd;
+    border-radius: 5px;
 }
 
-.controls button {
+#answer-input:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+#answer-input:disabled {
+    background-color: #f4f4f4;
+    cursor: not-allowed;
+}
+
+.controls button,
+#submit-button {
     padding: 10px 20px;
     font-size: 1em;
     cursor: pointer;
@@ -91,11 +107,13 @@ h1 {
     transition: background-color 0.2s ease;
 }
 
-.controls button:hover {
+.controls button:hover,
+#submit-button:hover {
     background-color: #0056b3;
 }
 
-.controls button:disabled {
+.controls button:disabled,
+#submit-button:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
 }
