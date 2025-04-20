@@ -12,7 +12,9 @@ export default defineConfig({
                 chunkFileNames: `assets/[name].[hash].js`,
                 assetFileNames: `assets/[name].[hash].[ext]`
             }
-        }
+        },
+        // Ensure TypeScript files are properly processed
+        sourcemap: true
     },
     publicDir: "public",
     server: {
